@@ -82,7 +82,7 @@ pub async fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         peer_client,
     };
 
-    let mut pull = sync::pull::Stage::new(peer_session.clone(), vec![args.starting_point.clone()]);
+    let pull = sync::pull::Stage::new(peer_session.clone(), vec![args.starting_point.clone()]);
 
     pull.find_intersection().await?;
 

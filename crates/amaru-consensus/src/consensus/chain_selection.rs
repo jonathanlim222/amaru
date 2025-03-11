@@ -31,8 +31,8 @@ pub struct Fragment<H: IsHeader> {
 }
 
 enum FragmentExtension {
-    Extend,
-    Ignore,
+    Extended,
+    Ignored,
 }
 
 impl<H: IsHeader + Clone> Fragment<H> {
@@ -53,10 +53,10 @@ impl<H: IsHeader + Clone> Fragment<H> {
             .position(|header| header.hash() == point)
     }
 
-    fn tip(&self) -> H {
+    fn tip(&self) -> &H {
         match self.headers.last() {
-            Some(header) => header.clone(),
-            None => self.anchor.clone(),
+            Some(header) => header,
+            None => &self.anchor,
         }
     }
 
@@ -64,10 +64,10 @@ impl<H: IsHeader + Clone> Fragment<H> {
         if let Some(parent) = header.parent() {
             if parent == self.tip().hash() {
                 self.headers.push(header.clone());
-                return FragmentExtension::Extend;
+                return FragmentExtension::Extended;
             }
         }
-        FragmentExtension::Ignore
+        FragmentExtension::Ignored
     }
 }
 
@@ -189,7 +189,7 @@ where
 
         // TODO: raise error if header does not match parent
         match fragment.extend_with(&header) {
-            FragmentExtension::Extend => {
+            FragmentExtension::Extended => {
                 let (best_peer, best_tip) = self.find_best_chain().unwrap();
 
                 let result = if best_tip.parent().unwrap() == self.tip.hash() {
@@ -256,14 +256,10 @@ where
 
     #[instrument(level = Level::TRACE, skip(self))]
     fn find_best_chain(&self) -> Option<(Peer, H)> {
-        let mut best: Option<(Peer, H)> = None;
-        for (peer, fragment) in self.peers_chains.iter() {
-            let best_height = best.as_ref().map_or(0, |(_, tip)| tip.block_height());
-            if fragment.height() > best_height {
-                best = Some((peer.clone(), fragment.tip()));
-            }
-        }
-        best
+        self.peers_chains
+            .iter()
+            .max_by_key(|(_, fragment)| fragment.height())
+            .map(|(peer, fragment)| (peer.clone(), fragment.tip().clone()))
     }
 
     #[allow(clippy::unwrap_used)]

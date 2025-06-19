@@ -7,8 +7,8 @@ graph TD
     disc[disconnect peer]
     net@{ shape: delay, label: "Upstream peers" }
     upstream([upstream]) -.-> net
-    upstream -- chain sync --> pull
-    pull -- ChainSyncEvent --> rcv[receive header]
+    upstream -- chain sync --> fetch_header
+    fetch_header -- ChainSyncEvent --> rcv[receive header]
     rcv -- malformed header --> disc
     val_hdr[validate header]
     rcv -- DecodedChainSyncEvent --> val_hdr
@@ -34,7 +34,7 @@ graph TD
 
 Stages:
 
-* [pull](../amaru/src/stages/pull.rs): connects to upstream peers, running chain sync and block fetch protocols.
+* [fetch_header](../amaru/src/stages/fetch_header.rs): connects to upstream peers, running chain sync and block fetch protocols.
 * [receive header](src/consensus/receive_header.rs): this stage is responsible for basic sanity check of _chain sync_ messages, deserialising raw headers, and potentially checking whether or not they should be further processed (eg. if a header is already known to be invalid, or known to be valid because it's part of our best chain, let's not waste time processing it!)
 * [validate header](src/consensus/validate_header.rs): protocol validation of the header, checks the correctness of the VRF leader election w.r.t relevant stake distribution, and epoch nonce
 * [store header](src/consensus/store_header.rs): store valid (and invalid?) headers indexed by hash

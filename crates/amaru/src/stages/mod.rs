@@ -53,8 +53,8 @@ use tokio::sync::Mutex;
 
 pub mod common;
 pub mod consensus;
+pub mod fetch_header;
 pub mod ledger;
-pub mod pull;
 
 pub type BlockHash = pallas_crypto::hash::Hash<32>;
 
@@ -124,7 +124,7 @@ pub fn bootstrap(
 
     let mut stages = peer_sessions
         .iter()
-        .map(|session| pull::Stage::new(session.clone(), vec![tip.clone()]))
+        .map(|session| fetch_header::Stage::new(session.clone(), vec![tip.clone()]))
         .collect::<Vec<_>>();
 
     let (our_tip, header, chain_store_ref) = make_chain_store(&config, era_history, tip)?;

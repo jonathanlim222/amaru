@@ -69,7 +69,7 @@ impl Stage {
     #[instrument(
         level = Level::TRACE,
         skip_all,
-        name = "stage.pull.find_intersection",
+        name = "stage.find_intersection",
         fields(
             peer = self.peer_session.peer.name,
             intersection.slot = %self.intersection.last().unwrap().slot_or_default(),
@@ -156,7 +156,7 @@ impl gasket::framework::Worker<Stage> for Worker {
 
     #[instrument(
         level = Level::TRACE,
-        name = "stage.pull",
+        name = "stage.fetch_header",
         skip_all,
     )]
     async fn execute(&mut self, unit: &WorkUnit, stage: &mut Stage) -> Result<(), WorkerError> {

@@ -1,4 +1,4 @@
-use amaru::stages::{pull, PeerSession};
+use amaru::stages::{fetch_header, PeerSession};
 use amaru_consensus::{consensus::store::ChainStore, peer::Peer, IsHeader};
 use amaru_kernel::{default_chain_dir, from_cbor, network::NetworkName, Header, Point};
 use amaru_stores::rocksdb::consensus::RocksDBStore;
@@ -96,7 +96,7 @@ pub(crate) async fn import_headers(
         peer_client,
     };
 
-    let mut pull = pull::Stage::new(peer_session.clone(), vec![point.clone()]);
+    let mut pull = fetch_header::Stage::new(peer_session.clone(), vec![point.clone()]);
 
     pull.find_intersection().await?;
 

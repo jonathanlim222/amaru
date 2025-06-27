@@ -58,7 +58,7 @@ pub use pallas_primitives::{
     alonzo::Value as AlonzoValue,
     babbage::{Header, MintedHeader},
     conway::{
-        AddrKeyhash, Anchor, AuxiliaryData, Block, BootstrapWitness, Certificate, Coin,
+        AddrKeyhash, Anchor, AssetName, AuxiliaryData, Block, BootstrapWitness, Certificate, Coin,
         Constitution, CostModel, CostModels, DRep, DRepVotingThresholds, DatumOption, ExUnitPrices,
         ExUnits, GovAction, GovActionId as ProposalId, HeaderBody, KeepRaw, MintedBlock,
         MintedDatumOption, MintedScriptRef, MintedTransactionBody, MintedTransactionOutput,
@@ -70,7 +70,7 @@ pub use pallas_primitives::{
         UnitInterval, VKeyWitness, Value, Voter, VotingProcedure, VotingProcedures, VrfKeyhash,
         WitnessSet,
     },
-    AssetName, Constr, DatumHash, MaybeIndefArray, PlutusData,
+    Constr, DatumHash, MaybeIndefArray, PlutusData,
 };
 pub use pallas_traverse::{ComputeHash, OriginalHash};
 pub use serde_json as json;

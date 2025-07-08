@@ -395,6 +395,7 @@ impl TransactionalContext<'_> for RocksDBTransactionalContext<'_> {
             impl Iterator<Item = (scolumns::dreps::Key, scolumns::dreps::Value)>,
             impl Iterator<Item = (scolumns::cc_members::Key, scolumns::cc_members::Value)>,
             impl Iterator<Item = (scolumns::proposals::Key, scolumns::proposals::Value)>,
+            impl Iterator<Item = (scolumns::votes::Key, scolumns::votes::Value)>,
         >,
         remove: Columns<
             impl Iterator<Item = scolumns::utxo::Key>,
@@ -402,7 +403,8 @@ impl TransactionalContext<'_> for RocksDBTransactionalContext<'_> {
             impl Iterator<Item = scolumns::accounts::Key>,
             impl Iterator<Item = (scolumns::dreps::Key, CertificatePointer)>,
             impl Iterator<Item = scolumns::cc_members::Key>,
-            impl Iterator<Item = scolumns::proposals::Key>,
+            impl Iterator<Item = ()>,
+            impl Iterator<Item = ()>,
         >,
         withdrawals: impl Iterator<Item = scolumns::accounts::Key>,
         voting_dreps: BTreeSet<StakeCredential>,
@@ -446,7 +448,6 @@ impl TransactionalContext<'_> for RocksDBTransactionalContext<'_> {
                 pools::remove(&self.transaction, remove.pools)?;
                 accounts::remove(&self.transaction, remove.accounts)?;
                 dreps::remove(&self.transaction, remove.dreps)?;
-                proposals::remove(&self.transaction, remove.proposals)?;
             }
         }
         Ok(())

@@ -206,6 +206,12 @@ impl<'a> TransactionalContext<'a> for MemoryTransactionalContext {
                     crate::store::columns::proposals::Value,
                 ),
             >,
+            impl Iterator<
+                Item = (
+                    crate::store::columns::votes::Key,
+                    crate::store::columns::votes::Value,
+                ),
+            >,
         >,
         _remove: crate::store::Columns<
             impl Iterator<Item = crate::store::columns::utxo::Key>,
@@ -218,7 +224,8 @@ impl<'a> TransactionalContext<'a> for MemoryTransactionalContext {
                 ),
             >,
             impl Iterator<Item = crate::store::columns::cc_members::Key>,
-            impl Iterator<Item = crate::store::columns::proposals::Key>,
+            impl Iterator<Item = ()>,
+            impl Iterator<Item = ()>,
         >,
         _withdrawals: impl Iterator<Item = crate::store::columns::accounts::Key>,
         _voting_dreps: BTreeSet<StakeCredential>,

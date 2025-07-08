@@ -45,6 +45,7 @@ use std::{
     ops::Deref,
 };
 
+pub use ballot::*;
 pub use memoized::*;
 pub use pallas_addresses::{byron::AddrType, Address, Network, StakeAddress, StakePayload};
 pub use pallas_codec::{
@@ -67,8 +68,8 @@ pub use pallas_primitives::{
         ProtocolParamUpdate, ProtocolVersion, PseudoScript, PseudoTransactionOutput,
         RationalNumber, Redeemer, Redeemers, RedeemersKey, Relay, RewardAccount, ScriptHash,
         ScriptRef, StakeCredential, TransactionBody, TransactionInput, TransactionOutput, Tx,
-        UnitInterval, VKeyWitness, Value, Voter, VotingProcedure, VotingProcedures, VrfKeyhash,
-        WitnessSet,
+        UnitInterval, VKeyWitness, Value, Vote, Voter, VotingProcedure, VotingProcedures,
+        VrfKeyhash, WitnessSet,
     },
     AssetName, Constr, DatumHash, MaybeIndefArray, PlutusData,
 };
@@ -77,6 +78,7 @@ pub use serde_json as json;
 pub use sha3;
 pub use slot_arithmetic::{Bound, EraHistory, EraParams, Slot, Summary};
 
+pub mod ballot;
 pub mod block;
 pub mod macros;
 pub mod memoized;

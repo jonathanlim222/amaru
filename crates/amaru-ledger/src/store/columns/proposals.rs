@@ -61,7 +61,7 @@ impl<'a, C> cbor::decode::Decode<'a, C> for Row {
 pub(crate) mod tests {
     use super::*;
     use crate::store::{
-        accounts::test::any_stake_credential,
+        accounts::tests::any_stake_credential,
         columns::dreps::tests::{any_anchor, any_transaction_pointer},
     };
     use amaru_kernel::{

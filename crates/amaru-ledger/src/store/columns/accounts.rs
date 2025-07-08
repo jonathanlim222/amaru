@@ -70,7 +70,7 @@ impl<'a, C> cbor::decode::Decode<'a, C> for Row {
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub(crate) mod tests {
     use super::Row;
     use crate::store::columns::{dreps::tests::any_certificate_pointer, pools::tests::any_pool_id};
     use amaru_kernel::{prop_cbor_roundtrip, DRep, Hash, Lovelace, StakeCredential};

@@ -29,12 +29,7 @@ use amaru_stores::rocksdb::RocksDB;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use slot_arithmetic::Epoch;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    fs, iter,
-    path::PathBuf,
-    sync::LazyLock,
-};
+use std::{collections::BTreeMap, fs, iter, path::PathBuf, sync::LazyLock};
 use tracing::info;
 
 const BATCH_SIZE: usize = 5000;
@@ -175,7 +170,6 @@ async fn import_one(
         Default::default(),
         Default::default(),
         iter::empty(),
-        BTreeSet::new(),
         era_history,
     )?;
     transaction.commit()?;
@@ -410,7 +404,6 @@ fn import_block_issuers(
                 },
                 Default::default(),
                 iter::empty(),
-                BTreeSet::new(),
                 era_history,
             )?;
             count -= 1;
@@ -465,7 +458,6 @@ fn import_utxo(
             },
             Default::default(),
             iter::empty(),
-            BTreeSet::new(),
             era_history,
         )?;
 
@@ -584,7 +576,6 @@ fn import_dreps(
         },
         Default::default(),
         iter::empty(),
-        BTreeSet::new(),
         era_history,
     )?;
     transaction.commit()
@@ -641,7 +632,6 @@ fn import_proposals(
         },
         Default::default(),
         iter::empty(),
-        BTreeSet::new(),
         era_history,
     )?;
     transaction.commit()?;
@@ -715,7 +705,6 @@ fn import_stake_pools(
             votes: iter::empty(),
         },
         iter::empty(),
-        BTreeSet::new(),
         era_history,
     )?;
     transaction.commit()
@@ -815,7 +804,6 @@ fn import_accounts(
             },
             Default::default(),
             iter::empty(),
-            BTreeSet::new(),
             era_history,
         )?;
 

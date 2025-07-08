@@ -30,7 +30,6 @@ use rocksdb::{
 };
 use slot_arithmetic::Epoch;
 use std::{
-    collections::BTreeSet,
     fmt, fs,
     path::{Path, PathBuf},
 };
@@ -407,7 +406,6 @@ impl TransactionalContext<'_> for RocksDBTransactionalContext<'_> {
             impl Iterator<Item = ()>,
         >,
         withdrawals: impl Iterator<Item = scolumns::accounts::Key>,
-        voting_dreps: BTreeSet<StakeCredential>,
         era_history: &EraHistory,
     ) -> Result<(), StoreError> {
         match (point, self.db.tip().ok()) {
@@ -435,8 +433,10 @@ impl TransactionalContext<'_> for RocksDBTransactionalContext<'_> {
                 accounts::add(&self.transaction, add.accounts)?;
                 cc_members::add(&self.transaction, add.cc_members)?;
                 proposals::add(&self.transaction, add.proposals)?;
+                let voting_dreps = votes::add(&self.transaction, add.votes)?;
 
                 accounts::reset_many(&self.transaction, withdrawals)?;
+
                 dreps::tick(&self.transaction, voting_dreps, {
                     let slot = point.slot_or_default();
                     era_history

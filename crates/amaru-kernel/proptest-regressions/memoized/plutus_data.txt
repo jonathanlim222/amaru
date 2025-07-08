@@ -1,8 +1,0 @@
-# Seeds for failure cases proptest has generated in the past. It is
-# automatically read and these particular cases re-run before any
-# novel cases are generated.
-#
-# It is recommended to check this file in to source control so that
-# everyone who runs the test benefits from these saved cases.
-cc 34f46c35dc2f7d4abb2c79f0e137340742ba416aa02bf3c6ec2e17debb361e28 # shrinks to original_data = Constr(Constr { tag: 128, any_constructor: Some(0), fields: Indef([]) })
-cc eac458926f8163c367c7cbbe5b0360f05d3fbc8a44cd7d593567a7c36b5ad1c8 # shrinks to original_data = Array(Indef([Constr(Constr { tag: 128, any_constructor: Some(0), fields: Indef([]) })]))

@@ -30,7 +30,6 @@ use pallas_codec::minicbor::{decode, encode, Decode, Decoder, Encode, Encoder};
 use pallas_primitives::{
     alonzo::Value as AlonzoValue,
     conway::{MintedPostAlonzoTransactionOutput, NativeScript, PseudoDatumOption},
-    PlutusScript,
 };
 use sha3::{Digest as _, Sha3_256};
 use std::{
@@ -44,10 +43,13 @@ use std::{
 };
 
 pub use memoized::*;
-pub use pallas_addresses::{byron::AddrType, Address, Network, StakeAddress, StakePayload};
+pub use pallas_addresses::{
+    byron::AddrType, Address, Network, ShelleyAddress, ShelleyDelegationPart, ShelleyPaymentPart,
+    StakeAddress, StakePayload,
+};
 pub use pallas_codec::{
     minicbor as cbor,
-    utils::{Bytes, CborWrap, KeyValuePairs, NonEmptyKeyValuePairs, Nullable, Set},
+    utils::{Bytes, CborWrap, Int, KeyValuePairs, NonEmptyKeyValuePairs, Nullable, Set},
 };
 pub use pallas_crypto::{
     hash::{Hash, Hasher},
@@ -68,7 +70,8 @@ pub use pallas_primitives::{
         TransactionBody, TransactionInput, TransactionOutput, Tx, UnitInterval, VKeyWitness, Value,
         Voter, VotingProcedure, VotingProcedures, VrfKeyhash, WitnessSet,
     },
-    AssetName, Constr, DatumHash, MaybeIndefArray, PlutusData,
+    AssetName, BigInt, Constr, DatumHash, MaybeIndefArray, PlutusData, PlutusScript, PolicyId,
+    PositiveCoin,
 };
 pub use pallas_traverse::{ComputeHash, OriginalHash};
 pub use serde_json as json;
@@ -771,7 +774,7 @@ pub fn new_stake_address(network: Network, payload: StakePayload) -> StakeAddres
 // ProposalId
 // ----------------------------------------------------------------------------
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 // TODO: This type shouldn't exist, and `Ord` / `PartialOrd` should be derived in Pallas on
 // 'GovActionId' already.
 pub struct ComparableProposalId {

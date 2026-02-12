@@ -82,11 +82,7 @@ enum ConnectionState {
 }
 
 impl Manager {
-    pub fn new(
-        magic: NetworkMagic,
-        config: ManagerConfig,
-        era_history: Arc<EraHistory>,
-    ) -> Self {
+    pub fn new(magic: NetworkMagic, config: ManagerConfig, era_history: Arc<EraHistory>) -> Self {
         Self {
             peers: BTreeMap::new(),
             magic,
@@ -315,10 +311,10 @@ pub async fn stage(state: State, msg: ManagerMessage, eff: Effects<ManagerMessag
             let network = Network::new(&eff);
             match network.listen(listen_addr).await {
                 Ok(listen_addr) => {
-                    tracing::info!(%listen_addr, "listening on address");
+                    tracing::info!(%listen_addr, "listening");
                 }
                 Err(error) => {
-                    tracing::error!(%listen_addr, %error, "cannot listen on address");
+                    tracing::error!(%listen_addr, %error, "cannot listen");
                     return eff.terminate().await;
                 }
             }

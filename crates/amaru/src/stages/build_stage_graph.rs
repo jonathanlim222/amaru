@@ -30,41 +30,49 @@ use amaru_protocols::manager;
 use amaru_protocols::manager::{Manager, ManagerMessage};
 use pure_stage::{Effects, SendData, StageGraph, StageRef};
 
-/// Create the graph of stages supporting the consensus protocol.
-/// The output of the graph is passed as a parameter, allowing the caller to
-/// decide what to do with the results the graph processing.
+/// Create a graph of processing stages for the node.
+///
+/// Notes:
+///
+/// - The `manager::stage` will dynamically create stages when getting peer connections.
+/// - Two stages are collecting failures and errors. According to https://www.reactivemanifesto.org/glossary#Failure
+///     - "A failure is an unexpected event within a service that prevents it from continuing to function normally"
+///     - "An error, ... is an expected and coded-for condition"
+///
+/// We terminate the node in case of a failure, while we just log errors.
+///
 #[expect(clippy::expect_used)]
 pub fn build_stage_graph(
     chain_selector: SelectChain,
     sync_tracker: SyncTracker,
     manager: Manager,
     our_tip: Tip,
-    network: &mut impl StageGraph,
+    stage_graph: &mut impl StageGraph,
 ) -> StageRef<ManagerMessage> {
-    let receive_header_stage = network.stage(
+    let receive_header_stage = stage_graph.stage(
         "receive_header",
         with_consensus_effects(receive_header::stage),
     );
-    let validate_header_stage = network.stage(
+    let validate_header_stage = stage_graph.stage(
         "validate_header",
         with_consensus_effects(validate_header::stage),
     );
     let fetch_block_stage =
-        network.stage("fetch_block", with_consensus_effects(fetch_block::stage));
-    let validate_block_stage = network.stage(
+        stage_graph.stage("fetch_block", with_consensus_effects(fetch_block::stage));
+    let validate_block_stage = stage_graph.stage(
         "validate_block",
         with_consensus_effects(validate_block::stage),
     );
     let select_chain_stage =
-        network.stage("select_chain", with_consensus_effects(select_chain::stage));
-    let forward_chain_stage = network.stage(
+        stage_graph.stage("select_chain", with_consensus_effects(select_chain::stage));
+    let forward_chain_stage = stage_graph.stage(
         "forward_chain",
         with_consensus_effects(forward_chain::stage),
     );
-    let accept_stage = network.stage("accept", accept::stage);
+    let accept_stage = stage_graph.stage("accept", accept::stage);
 
     let validation_errors_stage =
-        network.stage("validation_errors", async move |manager_stage, error, eff| {
+        stage_graph.stage("validation_errors", async move |manager_stage, error, eff| {
             let ValidationFailed { peer, error } = error;
             match error {
                 MissingTip
@@ -96,7 +104,7 @@ pub fn build_stage_graph(
             manager_stage
         });
 
-    let processing_errors_stage = network.stage(
+    let processing_errors_stage = stage_graph.stage(
         "processing_errors",
         async |_, error: ProcessingFailed, eff| {
             tracing::error!(%error, "stage error");
@@ -105,13 +113,15 @@ pub fn build_stage_graph(
         },
     );
 
-    let manager_stage = network.stage("manager", manager::stage);
-    let processing_errors_stage = network.wire_up(processing_errors_stage, ()).without_state();
-    let validation_errors_stage = network
+    let manager_stage = stage_graph.stage("manager", manager::stage);
+    let processing_errors_stage = stage_graph
+        .wire_up(processing_errors_stage, ())
+        .without_state();
+    let validation_errors_stage = stage_graph
         .wire_up(validation_errors_stage, manager_stage.sender())
         .without_state();
 
-    let forward_chain_stage = network
+    let forward_chain_stage = stage_graph
         .wire_up(
             forward_chain_stage,
             (
@@ -123,17 +133,17 @@ pub fn build_stage_graph(
         )
         .without_state();
 
-    let accept_stage = network
+    let accept_stage = stage_graph
         .wire_up(
             accept_stage,
             accept::AcceptState::new(manager_stage.sender(), manager.config()),
         )
         .without_state();
-    network
+    stage_graph
         .preload(&accept_stage, [PullAccept])
         .expect("preload should not fail on startup");
 
-    let select_chain_stage = network
+    let select_chain_stage = stage_graph
         .wire_up(
             select_chain_stage,
             (
@@ -144,7 +154,7 @@ pub fn build_stage_graph(
         )
         .without_state();
 
-    let validate_block_stage = network
+    let validate_block_stage = stage_graph
         .wire_up(
             validate_block_stage,
             (
@@ -155,7 +165,7 @@ pub fn build_stage_graph(
         )
         .without_state();
 
-    let fetch_block_stage = network
+    let fetch_block_stage = stage_graph
         .wire_up(
             fetch_block_stage,
             (
@@ -167,14 +177,14 @@ pub fn build_stage_graph(
         )
         .without_state();
 
-    let validate_header_stage = network
+    let validate_header_stage = stage_graph
         .wire_up(
             validate_header_stage,
             (fetch_block_stage, validation_errors_stage.clone()),
         )
         .without_state();
 
-    let receive_header_stage = network
+    let receive_header_stage = stage_graph
         .wire_up(
             receive_header_stage,
             receive_header::State::new(
@@ -185,11 +195,11 @@ pub fn build_stage_graph(
         )
         .without_state();
 
-    let pull_stage = network.stage("pull", pull::stage);
-    let pull_stage = network
+    let pull_stage = stage_graph.stage("pull", pull::stage);
+    let pull_stage = stage_graph
         .wire_up(pull_stage, (sync_tracker, receive_header_stage))
         .without_state();
-    network
+    stage_graph
         .wire_up(manager_stage, (manager, pull_stage))
         .without_state()
 }

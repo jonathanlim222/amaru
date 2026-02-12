@@ -17,30 +17,28 @@ use crate::tests::configuration::NodeType::{NodeUnderTest, UpstreamNode};
 use crate::tests::in_memory_connection_provider::InMemoryConnectionProvider;
 use crate::tests::test_data::{create_transactions, create_transactions_in_mempool};
 use amaru_consensus::headers_tree::data_generation::Action;
-use amaru_kernel::Peer;
-use amaru_kernel::cardano::network_block::{make_encoded_block, make_network_block};
-use amaru_kernel::utils::tests::run_strategy;
+use amaru_kernel::cardano::network_block::make_encoded_block;
 use amaru_kernel::{
-    BlockHeader, HeaderHash, IsHeader, NetworkMagic, NetworkName, PREPROD_ERA_HISTORY,
-    PREPROD_INITIAL_PROTOCOL_PARAMETERS, Point, Transaction, any_headers_chain_with_root,
-    make_header,
+    BlockHeader, IsHeader, NetworkMagic, NetworkName, PREPROD_ERA_HISTORY,
+    PREPROD_INITIAL_PROTOCOL_PARAMETERS, Point, Transaction,
 };
+use amaru_kernel::{EraHistory, Peer};
 use amaru_mempool::InMemoryMempool;
-use amaru_ouroboros_traits::in_memory_consensus_store::InMemConsensusStore;
-use amaru_ouroboros_traits::{ChainStore, ConnectionsResource, TxId};
-use amaru_slot_arithmetic::EraHistory;
+use amaru_ouroboros::in_memory_consensus_store::InMemConsensusStore;
+use amaru_ouroboros::{ChainStore, ConnectionsResource, TxId};
 use amaru_stores::in_memory::MemoryStore;
 use parking_lot::Mutex;
 use pure_stage::trace_buffer::TraceBuffer;
 use std::fmt::{Debug, Formatter};
-use std::str::FromStr;
 use std::sync::Arc;
 
 /// Configuration for running a test node:
+///
 ///  - With a specific chain store and mempool.
 ///  - With a specific connections resource which could be implemented in memory or via TCP.
 ///  - The chain length is the length of the maximum chain that has been created when generated data
 ///  - If this configuration is used for the initiator, it also contains the address of the upstream peer to connect to (the responder).
+///
 #[derive(Clone)]
 pub struct NodeTestConfig {
     pub chain_store: Arc<dyn ChainStore<BlockHeader>>,
@@ -202,6 +200,13 @@ impl NodeTestConfig {
         self
     }
 
+    /// Given a list of block headers:
+    ///
+    /// - Store them in the chain store.
+    /// - Create and store blocks for them.
+    /// - Declare that list of header as the best chain.
+    /// - Set the chain anchor and best tip to the first header of the chain.
+    ///
     #[expect(clippy::unwrap_used)]
     pub fn with_validated_blocks(self, headers: Vec<BlockHeader>) -> Self {
         let _span = self.enter_span();
@@ -232,35 +237,6 @@ impl NodeTestConfig {
                 .unwrap();
         }
         self
-    }
-
-    /// Initialize the chain store with a chain of headers.
-    /// The responder chain is longer than the initiator chain to force the initiator to catch up.
-    pub fn initialize_chain_store(&self) -> anyhow::Result<()> {
-        // Use the same root header for both initiator and responder
-        let origin_hash: HeaderHash = amaru_kernel::Hash::from_str(
-            "4df4505d862586f9e2c533c5fbb659f04402664db1b095aba969728abfb77301",
-        )?;
-        let root_header =
-            BlockHeader::from(make_header(100_000_000, 100_000_000, Some(origin_hash)));
-        self.chain_store.set_anchor_hash(&root_header.hash())?;
-        let mut headers = run_strategy(any_headers_chain_with_root(
-            self.chain_length - 1, // -1 since we already have the root header
-            root_header.point(),
-        ));
-        headers.insert(0, root_header);
-
-        for header in headers.iter() {
-            self.chain_store.store_header(header)?;
-            self.chain_store.roll_forward_chain(&header.point())?;
-            self.chain_store.set_best_chain_hash(&header.hash())?;
-
-            tracing::info!("storing block for header {}", header.point());
-            let network_block = make_network_block(header, &self.era_history);
-            self.chain_store
-                .store_block(&header.hash(), &network_block.raw_block())?;
-        }
-        Ok(())
     }
 
     /// Create a node configuration from the simulation configuration.

@@ -22,18 +22,15 @@ use amaru_consensus::stages::pull::SyncTracker;
 use amaru_consensus::stages::select_chain::SelectChain;
 use amaru_consensus::stages::validate_header::ValidateHeader;
 use amaru_kernel::{
-    BlockHeader, ConsensusParameters, GlobalParameters, HeaderHash, ORIGIN_HASH, Peer, Tip,
-    Transaction,
+    BlockHeader, ConsensusParameters, EraHistory, GlobalParameters, HeaderHash, ORIGIN_HASH, Peer,
+    Tip, Transaction,
 };
 use amaru_mempool::InMemoryMempool;
 use amaru_metrics::METRICS_METER_NAME;
 use amaru_network::connection::TokioConnections;
-use amaru_ouroboros_traits::{
-    ChainStore, ConnectionsResource, HasStakeDistribution, ResourceMempool,
-};
+use amaru_ouroboros::{ChainStore, ConnectionsResource, HasStakeDistribution, ResourceMempool};
 use amaru_protocols::manager::{Manager, ManagerConfig, ManagerMessage};
 use amaru_protocols::store_effects::{ResourceHeaderStore, ResourceParameters};
-use amaru_slot_arithmetic::EraHistory;
 use amaru_stores::rocksdb::consensus::RocksDBStore;
 use anyhow::{Context, anyhow};
 use opentelemetry::metrics::MeterProvider;
@@ -44,7 +41,7 @@ use std::sync::Arc;
 use tokio::runtime::Handle;
 use tracing::info;
 
-/// Build a node given the provided configuration and run it.
+/// Build a node given the provided configuration and run it using Tokio.
 pub fn build_and_run_node(
     config: Config,
     meter_provider: Option<SdkMeterProvider>,
@@ -60,6 +57,18 @@ pub fn build_and_run_node(
     Ok(stage_builder.run(Handle::current().clone()))
 }
 
+/// Build a node, given configuration parameters and a StageGraph implementation (could be `TokioBuilder` or `SimulationBuilder`):
+///
+/// 1. Initialize the ledger and get its tip.
+/// 2. Initialize the chain store and its tip (make it equal to the ledger tip, because it could be further along than the ledger tip after a node stop).
+/// 3. Prepare resources for the stages graph.
+/// 4. Build the stages graph.
+/// 5. Register static peers and intend on connecting to them.
+/// 6. Register a listener for downstream connections.
+///
+/// Return a refererence to the `Manager` stage to have the possibility to send internal messages for
+/// testing.
+///
 pub fn build_node(
     config: &Config,
     global_parameters: &GlobalParameters,
@@ -182,7 +191,6 @@ fn register_resources(
 
 /// This function migrates the database if necessary and
 /// sets the tip and anchor of the chain store to the ledger tip.
-#[expect(clippy::panic)]
 fn initialize_chain_store(
     config: &Config,
     tip: &HeaderHash,
@@ -196,9 +204,10 @@ fn initialize_chain_store(
     };
 
     if *tip != ORIGIN_HASH && chain_store.load_header(tip).is_none() {
-        panic!(
+        anyhow::bail!(
             "Tip {} not found in chain database '{}'",
-            tip, config.chain_store
+            tip,
+            config.chain_store
         )
     };
 

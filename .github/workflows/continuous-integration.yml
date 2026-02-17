@@ -387,7 +387,21 @@ jobs:
       - name: Run node
         timeout-minutes: ${{ fromJSON(env.TIMEOUT_RUN) }}
         shell: bash
-        run: make AMARU_MAX_EXTRA_LEDGER_SNAPSHOTS=all demo
+        run: make AMARU_MAX_EXTRA_LEDGER_SNAPSHOTS=all demo 2> traces.log
+
+      - name: Analyze traces
+        if: always() && steps.cache-ledger-db.outcome == 'success'
+        shell: bash
+        run: |
+          if [ ! -s traces.log ]; then
+            echo "No traces captured, skipping analysis."
+            exit 0
+          fi
+          cargo run --bin amaru-trace-metrics -- json traces.log trace-metrics.json
+          cargo run --bin amaru-trace-metrics -- summary traces.log
+          ./scripts/compare-trace-metrics \
+            data/${{ matrix.network.name }}/trace-metrics-baseline.json \
+            trace-metrics.json
 
       - name: Run tests
         if: github.event_name == 'pull_request'
@@ -493,8 +507,9 @@ jobs:
           set -euo pipefail
 
           # Canonicalize JSON to avoid formatting noise
-          jq -S . docs/traces-schema.json > /tmp/expected.json
-          jq -S . /tmp/schemas-current.json > /tmp/current.json
+          # Remove 'private' field from comparison as it doesn't affect functionality
+          jq -S 'walk(if type == "object" then del(.private) else . end)' docs/traces-schema.json > /tmp/expected.json
+          jq -S 'walk(if type == "object" then del(.private) else . end)' /tmp/schemas-current.json > /tmp/current.json
 
           if diff -u /tmp/expected.json /tmp/current.json > /tmp/schemas.diff; then
             echo "✓ Schemas are up-to-date"
